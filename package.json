@@ -1,0 +1,22 @@
+{
+  "name": "ECR",
+  "version": "0.0.1",
+  "description": "This is a node module that provides communication support with electronic cash registers (ECR). At the moment, it supports Int Raster DP25, as that's the one I currently use.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DVSoftware/ecr.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/DVSoftware/ecr/issues"
+  },
+  "homepage": "https://github.com/DVSoftware/ecr",
+  "dependencies": {
+    "serialport": "^2.0.6"
+  }
+}
