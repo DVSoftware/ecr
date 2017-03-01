@@ -1,0 +1,22 @@
+{
+    "extends": "airbnb",
+    "parserOptions": {
+        "ecmaVersion": 6,
+        "sourceType": 'script',
+    },
+    "rules": {
+        "semi": 2,
+        "indent": ["error", "tab"],
+        "import/no-unresolved": 0,
+        "strict": ["error", "global"],
+        "no-tabs": 0,
+        'comma-dangle': ['error', {
+            arrays: 'always-multiline',
+            objects: 'always-multiline',
+            imports: 'always-multiline',
+            exports: 'always-multiline',
+            functions: 'ignore',
+        }],
+        "no-param-reassign": 0,
+    }
+}

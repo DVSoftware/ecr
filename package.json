@@ -17,6 +17,6 @@
   },
   "homepage": "https://github.com/DVSoftware/ecr",
   "dependencies": {
-    "serialport": "^2.0.6"
+    "serialport": "^4.0.0"
   }
 }

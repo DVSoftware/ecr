@@ -1,18 +1,19 @@
 var SerialPort = require('serialport');
 
 var ECR = function (device, baudRate, Driver, callback) {
-	this.serialPort = new SerialPort.SerialPort(device, {
+	this.serialPort = new SerialPort(device, {
 		baudrate: baudRate,
-		parser: SerialPort.parsers.raw
-	}, true, function (error) {
+		parser: SerialPort.parsers.byteLength(1),
+		autoOpen: true
+	}, function (error) {
 		this.printer = new Driver(this.serialPort);
-		console.log(error, this.serialPort);
+		// console.log(error, this.serialPort);
 		this.serialPort.on('error', function (data) {
 			console.log('error', data);
 		});
 
 		this.serialPort.on('data', function (data) {
-			console.log('data', data);
+			// console.log('data', data);
 		});
 
 		this.serialPort.on('disconnected', function (data) {
