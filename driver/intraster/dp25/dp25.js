@@ -276,15 +276,15 @@ class Dp25 {
 	}
 
 	displayBottom(text, callback) {
-		this.queue(this.packMessage(0x23, (text || '').substring(0, 20), callback));
+		this.queue(this.packMessage(0x23, (text || '').substring(0, 20)), callback);
 	}
 
 	displayTop(text, callback) {
-		this.queue(this.packMessage(0x2F, (text || '').substring(0, 20), callback));
+		this.queue(this.packMessage(0x2F, (text || '').substring(0, 20)), callback);
 	}
 
 	testCommunication(callback) {
-		this.queue(this.packMessage(0x2D, callback));
+		this.queue(this.packMessage(0x2D), callback);
 	}
 
 	openFiscalReceipt(operator, password, till, callback) {
