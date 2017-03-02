@@ -38,11 +38,11 @@ class Dp25 {
 		this.sequence = 0x22;
 		this.serialPort = serialPort;
 
-		this.serialPort.on('data', buffer => {
+		this.serialPort.on('data', (buffer) => {
 			// @todo implement timeout and retry after 500ms
 			if (reading === false && buffer[0] === 0x15) {
 				// NAK 15H
-				retries++;
+				retries += 1;
 				this.runQueue();
 				if (retries === MAX_RETRIES) {
 					throw new Error('Maximum retries reached');
@@ -52,7 +52,7 @@ class Dp25 {
 				// @todo wait
 			} else if (reading === false && buffer[0] === 0x01) {
 				// Preamble
-				position++;
+				position += 1;
 				reading = true;
 			} else if (reading === true && position === 1) {
 				// Length
@@ -62,39 +62,39 @@ class Dp25 {
 					status: Buffer.alloc(6),
 					checksum: Buffer.alloc(4),
 				};
-				position++;
+				position += 1;
 			} else if (reading === true && position === 2) {
 				// Sequence
 				message.sequence = buffer[0];
-				position++;
+				position += 1;
 			} else if (reading === true && position === 3) {
 				// Command
 				message.command = buffer[0];
-				position++;
+				position += 1;
 			} else if (reading === true && position < message.length - 0x20 - 7) {
 				message.data[subPosition] = buffer[0];
-				subPosition++;
-				position++;
+				subPosition += 1;
+				position += 1;
 			} else if (reading === true && position === message.length - 0x20 - 7) {
 				if (buffer[0] !== 0x04) {
 					throw new Error(`Invalid delimiter. Expected 0x04 got ${buffer[0]}`);
 				}
 				subPosition = 0;
-				position++;
+				position += 1;
 			} else if (reading === true && position < message.length - 0x20) {
 				message.status[subPosition] = buffer[0];
-				subPosition++;
-				position++;
+				subPosition += 1;
+				position += 1;
 			} else if (reading === true && position === message.length - 0x20) {
 				if (buffer[0] !== 0x05) {
 					throw new Error(`Invalid postamble. Expected 0x05 got ${buffer[0]}`);
 				}
 				subPosition = 0;
-				position++;
+				position += 1;
 			} else if (reading === true && position < (message.length - 0x20) + 5) {
 				message.checksum[subPosition] = buffer[0];
-				subPosition++;
-				position++;
+				subPosition += 1;
+				position += 1;
 			} else if (reading === true && position === (message.length - 0x20) + 5) {
 				if (buffer[0] !== 0x03) {
 					throw new Error(`Invalid terminator. Expected 0x03 got ${buffer[0]}`);
@@ -235,7 +235,7 @@ class Dp25 {
 		message += this.calculateBcc(this.sequence, cmd, data); // Checksum
 		message += String.fromCharCode(0x03); // Terminator
 
-		this.sequence++;
+		this.sequence += 1;
 		if (this.sequence > SEQUENCE_MAX) {
 			this.sequence = SEQUENCE_MIN;
 		}
@@ -260,11 +260,11 @@ class Dp25 {
 		}
 
 		bcc += 0x05; // Postamble
-		output += String.fromCharCode(0x30 + (bcc - (bcc % 4096)) / 4096); // Encode the bcc
+		output += String.fromCharCode(0x30 + ((bcc - (bcc % 4096)) / 4096)); // Encode the bcc
 		tmp = bcc % 4096;
-		output += String.fromCharCode(0x30 + (tmp - (tmp % 256)) / 256);
+		output += String.fromCharCode(0x30 + ((tmp - (tmp % 256)) / 256));
 		tmp = bcc % 256;
-		output += String.fromCharCode(0x30 + (tmp - (tmp % 16)) / 16);
+		output += String.fromCharCode(0x30 + ((tmp - (tmp % 16)) / 16));
 		tmp = bcc % 16;
 		output += String.fromCharCode(0x30 + tmp);
 
@@ -315,7 +315,6 @@ class Dp25 {
 
 	programRead(plu, callback) {
 		this.queue(this.packMessage(0x6B, `R,${plu}`), (err, message) => {
-			console.log(message);
 			if (err) {
 				return callback.call(this, err);
 			}
@@ -333,12 +332,35 @@ class Dp25 {
 				price: split.shift(),
 				total: split.shift(),
 				sold: split.shift(),
-				bar: split.shift(),
-				bar2: split.shift(),
+				ean: split.shift(),
+				ean2: split.shift(),
 				pack: split.shift(),
 				name: split.join(','),
 			});
 		});
+	}
+
+	programWrite(check, taxGroup, plu, priceType, price, ean, pack, name, callback) {
+		this.queue(
+			this.packMessage(
+				0x6B,
+				`P,${0x09}${check},${taxGroup},${plu},${priceType},${price},${ean},0,${pack},${name}`
+			),
+			(err, message) => {
+				if (err) {
+					return callback.call(this, err);
+				}
+
+				const split = message.data.toString().split(',');
+				if (split.length === 1) {
+					return callback.call(this, null, {
+						errStatus: split.shift(),
+					});
+				}
+
+				return null;
+			}
+		);
 	}
 }
 

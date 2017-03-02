@@ -18,5 +18,7 @@
             functions: 'ignore',
         }],
         "no-param-reassign": 0,
+        "no-bitwise": 0,
+        "no-plusplus": ["error", { "allowForLoopAfterthoughts": true }]
     }
 }
