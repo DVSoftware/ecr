@@ -20,7 +20,7 @@ class ECR {
 				console.log('disconnected', data);
 			});
 
-			return callback.call(this, null, this);
+			return callback.call(this, null, this.printer);
 		});
 	}
 }
