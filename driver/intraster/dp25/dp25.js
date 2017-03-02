@@ -39,7 +39,6 @@ class Dp25 {
 		this.serialPort = serialPort;
 
 		this.serialPort.on('data', buffer => {
-			console.log(buffer);
 			// @todo implement timeout and retry after 500ms
 			if (reading === false && buffer[0] === 0x15) {
 				// NAK 15H
