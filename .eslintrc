@@ -8,7 +8,6 @@
         "semi": 2,
         "indent": ["error", "tab"],
         "import/no-unresolved": 0,
-        "strict": ["error", "global"],
         "no-tabs": 0,
         'comma-dangle': ['error', {
             arrays: 'always-multiline',

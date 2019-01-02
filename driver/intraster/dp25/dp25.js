@@ -141,9 +141,7 @@ class Dp25 {
 			}
 
 			if ((status[1] & 2) === 2) {
-				errors[ERROR.FATAL_NOT_ALLOWED] = new Error(
-					'Fatal Error: Command not allowed in the current fiscal mode'
-				);
+				errors[ERROR.FATAL_NOT_ALLOWED] = new Error('Fatal Error: Command not allowed in the current fiscal mode');
 			}
 
 			if ((status[1] & 1) === 1) {
@@ -160,9 +158,7 @@ class Dp25 {
 		if ((status[4] & 32) === 32) {
 			// Fiscal memory error
 			if ((status[4] & 1) === 1) {
-				errors[ERROR.FISCAL_WRITE_ERROR] = new Error(
-					'Fiscal Memory Error: Error writing to the fiscal memory'
-				);
+				errors[ERROR.FISCAL_WRITE_ERROR] = new Error('Fiscal Memory Error: Error writing to the fiscal memory');
 			}
 
 			if ((status[4] & 16) === 16) {
@@ -170,9 +166,7 @@ class Dp25 {
 			}
 
 			if ((status[5] & 1) === 1) {
-				errors[ERROR.FISCAL_MEMORY_READONLY] = new Error(
-					'Fiscal Memory Error: Fiscal memory is read only'
-				);
+				errors[ERROR.FISCAL_MEMORY_READONLY] = new Error('Fiscal Memory Error: Fiscal memory is read only');
 			}
 
 			error = true;
@@ -361,6 +355,72 @@ class Dp25 {
 				return null;
 			}
 		);
+	}
+
+	getFirstSoldItem(from = '') {
+		return new Promise((resolve, reject) => {
+			this.queue(this.packMessage(
+				0x6B,
+				`f${from}`
+			), (err, message) => {
+				if (err) {
+					return reject(err);
+				}
+
+				const split = message.data.toString().split(',');
+
+				if (split[0] === 'F') {
+					return resolve(null);
+				}
+
+				return resolve({
+					errStatus: split.shift(),
+					plu: split.shift(),
+					taxGroup: split.shift(),
+					priceType: split.shift(),
+					price: split.shift(),
+					total: split.shift(),
+					sold: split.shift(),
+					ean: split.shift(),
+					ean2: split.shift(),
+					pack: split.shift(),
+					name: split.shift().join(','),
+				});
+			});
+		});
+	}
+
+	getNextSoldItem() {
+		return new Promise((resolve, reject) => {
+			this.queue(this.packMessage(
+				0x6B,
+				'n'
+			), (err, message) => {
+				if (err) {
+					return reject(err);
+				}
+
+				const split = message.data.toString().split(',');
+
+				if (split[0] === 'F') {
+					return resolve(null);
+				}
+
+				return resolve({
+					errStatus: split.shift(),
+					plu: split.shift(),
+					taxGroup: split.shift(),
+					priceType: split.shift(),
+					price: split.shift(),
+					total: split.shift(),
+					sold: split.shift(),
+					ean: split.shift(),
+					ean2: split.shift(),
+					pack: split.shift(),
+					name: split.shift().join(','),
+				});
+			});
+		});
 	}
 }
 
