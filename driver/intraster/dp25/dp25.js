@@ -357,6 +357,32 @@ class Dp25 {
 		);
 	}
 
+	getTotals() {
+		return new Promise((resolve, reject) => {
+			this.queue(this.packMessage(
+				0x41,
+				'4'
+			), (err, message) => {
+				if (err) {
+					return reject(err);
+				}
+
+				const split = message.data.toString().split(',');
+
+				if (split[0] === 'F') {
+					return reject(new Error('F'));
+				}
+
+				return resolve({
+					errStatus: split.shift(),
+					cash: split.shift(),
+					check: split.shift(),
+					card: split.shift(),
+				});
+			});
+		});
+	}
+
 	getFirstSoldItem(from = '') {
 		return new Promise((resolve, reject) => {
 			this.queue(this.packMessage(
@@ -374,17 +400,12 @@ class Dp25 {
 				}
 
 				return resolve({
-					errStatus: split.shift(),
-					plu: split.shift(),
+					plu: split.shift().substring(1),
 					taxGroup: split.shift(),
-					priceType: split.shift(),
 					price: split.shift(),
-					total: split.shift(),
 					sold: split.shift(),
-					ean: split.shift(),
-					ean2: split.shift(),
-					pack: split.shift(),
-					name: split.shift().join(','),
+					total: split.shift(),
+					name: split.join(','),
 				});
 			});
 		});
@@ -407,17 +428,12 @@ class Dp25 {
 				}
 
 				return resolve({
-					errStatus: split.shift(),
-					plu: split.shift(),
+					plu: split.shift().substring(1),
 					taxGroup: split.shift(),
-					priceType: split.shift(),
 					price: split.shift(),
-					total: split.shift(),
 					sold: split.shift(),
-					ean: split.shift(),
-					ean2: split.shift(),
-					pack: split.shift(),
-					name: split.shift().join(','),
+					total: split.shift(),
+					name: split.join(','),
 				});
 			});
 		});
