@@ -338,7 +338,7 @@ class Dp25 {
 		this.queue(
 			this.packMessage(
 				0x6B,
-				`P,${0x09}${check},${taxGroup},${plu},${priceType},${price},${ean},0,${pack},${name}`
+				`P,${taxGroup},${plu},${priceType},${price},${ean},0,${pack},${name}`
 			),
 			(err, message) => {
 				if (err) {
@@ -375,9 +375,9 @@ class Dp25 {
 
 				return resolve({
 					errStatus: split.shift(),
-					cash: split.shift(),
-					check: split.shift(),
-					card: split.shift(),
+					cash: parseInt(split.shift(), 10) / 100,
+					check: parseInt(split.shift(), 10) / 100,
+					card: parseInt(split.shift(), 10) / 100,
 				});
 			});
 		});
