@@ -3,8 +3,7 @@ const SerialPort = require('serialport');
 class ECR {
 	constructor(device, baudRate, Driver, callback) {
 		this.serialPort = new SerialPort(device, {
-			baudrate: baudRate,
-			parser: SerialPort.parsers.byteLength(1),
+			baudRate,
 			autoOpen: true,
 		}, (error) => {
 			if (error) {
