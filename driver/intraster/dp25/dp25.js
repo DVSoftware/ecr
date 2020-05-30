@@ -111,7 +111,12 @@ class Dp25 {
 
 				this.parseStatus(message.status, (err, statuses) => {
 					message.statuses = statuses;
-					this.messageQueue.shift().callback.call(this, err, message);
+					const queueMessage = this.messageQueue.shift();
+					queueMessage.callback.call(this, err, message);
+					if (err) {
+						return queueMessage.reject.call(this, err);
+					}
+					queueMessage.resolve.call(this, message);
 				});
 			} else {
 				throw new Error('Malformed response from the printer');
@@ -120,10 +125,14 @@ class Dp25 {
 	}
 
 	queue(message, callback) {
-		this.messageQueue.push({ message, callback });
-		if (this.messageQueue.length === 1) {
-			this.runQueue();
-		}
+		return new Promise((resolve, reject) => {
+			this.messageQueue.push({
+				message, callback, resolve, reject,
+			});
+			if (this.messageQueue.length === 1) {
+				this.runQueue();
+			}
+		});
 	}
 
 	runQueue() {
@@ -286,15 +295,85 @@ class Dp25 {
 		this.queue(this.packMessage(0x2D), callback);
 	}
 
-	openFiscalReceipt(operator, password, till, callback) {
-		this.queue(this.packMessage(0x30, `${operator};${password},${till}`), (err, message) => {
-			if (err) {
-				return callback.call(this, err);
-			}
-			const split = message.data.split(',');
-			return callback.call(this, null, {
-				receipts: split[0],
-				fiscalReceipts: split[1],
+	openFiscalReceipt(operator, password, till) {
+		return new Promise((resolve, reject) => {
+			this.queue(this.packMessage(0x30, `${operator};${password},${till}`), (err, message) => {
+				if (err) {
+					return reject(err);
+				}
+				const split = message.data.toString().split(',');
+				return resolve({
+					receipts: split[0],
+					fiscalReceipts: split[1],
+				});
+			});
+		});
+	}
+	closeFiscalReceipt() {
+		return new Promise((resolve, reject) => {
+			this.queue(this.packMessage(0x38), (err, message) => {
+				if (err) {
+					return reject(err);
+				}
+				const split = message.data.toString().split(',');
+				return resolve({
+					allReceipt: split[0],
+					fiscalReceipt: split[1],
+					total: split[2],
+				});
+			});
+		});
+	}
+
+	status(option) {
+		return new Promise((resolve, reject) => {
+			this.queue(this.packMessage(0x4C, option), (err, message) => {
+				if (err) {
+					return reject(err);
+				}
+
+				const [open, items, amount, tender] = message.data.toString().split(',');
+				return {
+					open,
+					items,
+					amount,
+					tender,
+				};
+			});
+		});
+	}
+
+	total(paidMode, amount) {
+		return new Promise((resolve, reject) => {
+			this.queue(this.packMessage(0x35, `${paidMode}${amount}`), (err, message) => {
+				if (err) {
+					return reject(err);
+				}
+
+				const [paidCode, ...amount] = message.data.toString().split(',');
+
+				if (paidCode === 'F') {
+					return reject({
+						paidCode,
+					});
+				}
+				return resolve({
+					paidCode,
+					amount: amount.join(''),
+				});
+			});
+		});
+	}
+	register(sign, plu, quantity, price) {
+		return new Promise((resolve, reject) => {
+			this.queue(this.packMessage(0x34, `S${sign}${plu}*${quantity}#${price}`), (err, message) => {
+				if (err) {
+					return reject(err);
+				}
+
+				return resolve({
+
+				});
 			});
 		});
 	}
@@ -304,7 +383,7 @@ class Dp25 {
 			if (err) {
 				return callback.call(this, err);
 			}
-			const split = message.data.split(',');
+			const split = message.data.toString().split(',');
 			return callback.call(this, null, {
 				subTotal: split.shift(),
 				tax: split,
