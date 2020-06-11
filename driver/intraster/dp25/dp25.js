@@ -112,11 +112,14 @@ class Dp25 {
 				this.parseStatus(message.status, (err, statuses) => {
 					message.statuses = statuses;
 					const queueMessage = this.messageQueue.shift();
-					queueMessage.callback.call(this, err, message);
-					if (err) {
-						return queueMessage.reject.call(this, err);
-					}
-					queueMessage.resolve.call(this, message);
+					if (typeof queueMessage.callback === 'function') {
+						queueMessage.callback.call(this, err, message);
+	 				} else {
+						 if (err) {
+							 return queueMessage.reject.call(this, err);
+						 }
+						 queueMessage.resolve.call(this, message);
+					 }
 				});
 			} else {
 				throw new Error('Malformed response from the printer');
@@ -310,19 +313,15 @@ class Dp25 {
 		});
 	}
 	closeFiscalReceipt() {
-		return new Promise((resolve, reject) => {
-			this.queue(this.packMessage(0x38), (err, message) => {
-				if (err) {
-					return reject(err);
-				}
+		return this.queue(this.packMessage(0x38))
+			.then((message) => {
 				const split = message.data.toString().split(',');
-				return resolve({
+				return {
 					allReceipt: split[0],
 					fiscalReceipt: split[1],
 					total: split[2],
-				});
+				};
 			});
-		});
 	}
 
 	status(option) {
@@ -344,38 +343,23 @@ class Dp25 {
 	}
 
 	total(paidMode, amount) {
-		return new Promise((resolve, reject) => {
-			this.queue(this.packMessage(0x35, `${paidMode}${amount}`), (err, message) => {
-				if (err) {
-					return reject(err);
-				}
-
-				const [paidCode, ...amount] = message.data.toString().split(',');
+		return this.queue(this.packMessage(0x35, `${paidMode}${amount}`))
+			.then((message) => {
+				const [paidCode, ...paidAmount] = message.data.toString().split(',');
 
 				if (paidCode === 'F') {
-					return reject({
+					throw new Error({
 						paidCode,
 					});
 				}
-				return resolve({
+				return {
 					paidCode,
-					amount: amount.join(''),
-				});
+					amount: paidAmount.join(''),
+				};
 			});
-		});
 	}
 	register(sign, plu, quantity, price) {
-		return new Promise((resolve, reject) => {
-			this.queue(this.packMessage(0x34, `S${sign}${plu}*${quantity}#${price}`), (err, message) => {
-				if (err) {
-					return reject(err);
-				}
-
-				return resolve({
-
-				});
-			});
-		});
+		return this.queue(this.packMessage(0x34, `S${sign}${plu}*${quantity}#${price}`));
 	}
 
 	subtotal(display, callback) {
