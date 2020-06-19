@@ -299,18 +299,14 @@ class Dp25 {
 	}
 
 	openFiscalReceipt(operator, password, till) {
-		return new Promise((resolve, reject) => {
-			this.queue(this.packMessage(0x30, `${operator};${password},${till}`), (err, message) => {
-				if (err) {
-					return reject(err);
-				}
+		return this.queue(this.packMessage(0x30, `${operator};${password},${till}`))
+			.then((message) => {
 				const split = message.data.toString().split(',');
-				return resolve({
+				return {
 					receipts: split[0],
 					fiscalReceipts: split[1],
-				});
+				};
 			});
-		});
 	}
 	closeFiscalReceipt() {
 		return this.queue(this.packMessage(0x38))
@@ -325,12 +321,8 @@ class Dp25 {
 	}
 
 	status(option) {
-		return new Promise((resolve, reject) => {
-			this.queue(this.packMessage(0x4C, option), (err, message) => {
-				if (err) {
-					return reject(err);
-				}
-
+		return this.queue(this.packMessage(0x4C, option))
+			.then(message => {
 				const [open, items, amount, tender] = message.data.toString().split(',');
 				return {
 					open,
@@ -338,8 +330,7 @@ class Dp25 {
 					amount,
 					tender,
 				};
-			});
-		});
+			})
 	}
 
 	total(paidMode, amount) {
