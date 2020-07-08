@@ -116,9 +116,13 @@ class Dp25 {
 						queueMessage.callback.call(this, err, message);
 	 				} else {
 						 if (err) {
+							// hack to get message when we are out of paper
+							if (err[4]) {
+								return queueMessage.resolve.call(this, [message, true]);
+							}
 							 return queueMessage.reject.call(this, err);
 						 }
-						 queueMessage.resolve.call(this, message);
+						 queueMessage.resolve.call(this, [message]);
 					 }
 				});
 			} else {
@@ -282,60 +286,63 @@ class Dp25 {
 		return output;
 	}
 
-	clearDisplay(callback) {
-		this.queue(this.packMessage(0x21), callback);
+	clearDisplay() {
+		return this.queue(this.packMessage(0x21));
 	}
 
-	displayBottom(text, callback) {
-		this.queue(this.packMessage(0x23, (text || '').substring(0, 20)), callback);
+	displayBottom(text) {
+		return this.queue(this.packMessage(0x23, (text || '').substring(0, 20)));
 	}
 
-	displayTop(text, callback) {
-		this.queue(this.packMessage(0x2F, (text || '').substring(0, 20)), callback);
+	displayTop(text) {
+		return this.queue(this.packMessage(0x2F, (text || '').substring(0, 20)));
 	}
 
-	testCommunication(callback) {
-		this.queue(this.packMessage(0x2D), callback);
+	testCommunication() {
+		return this.queue(this.packMessage(0x2D));
 	}
 
 	openFiscalReceipt(operator, password, till) {
 		return this.queue(this.packMessage(0x30, `${operator};${password},${till}`))
-			.then((message) => {
+			.then(([message, outOfPaper]) => {
 				const split = message.data.toString().split(',');
 				return {
 					receipts: split[0],
 					fiscalReceipts: split[1],
+					outOfPaper,
 				};
 			});
 	}
 	closeFiscalReceipt() {
 		return this.queue(this.packMessage(0x38))
-			.then((message) => {
+			.then(([message, outOfPaper]) => {
 				const split = message.data.toString().split(',');
 				return {
 					allReceipt: split[0],
 					fiscalReceipt: split[1],
 					total: split[2],
+					outOfPaper,
 				};
 			});
 	}
 
 	status(option) {
 		return this.queue(this.packMessage(0x4C, option))
-			.then(message => {
+			.then(([message, outOfPaper]) => {
 				const [open, items, amount, tender] = message.data.toString().split(',');
 				return {
 					open,
 					items,
 					amount,
 					tender,
+					outOfPaper,
 				};
-			})
+			});
 	}
 
 	total(paidMode, amount) {
 		return this.queue(this.packMessage(0x35, `${paidMode}${amount}`))
-			.then((message) => {
+			.then(([message, outOfPaper]) => {
 				const [paidCode, ...paidAmount] = message.data.toString().split(',');
 
 				if (paidCode === 'F') {
@@ -346,24 +353,28 @@ class Dp25 {
 				return {
 					paidCode,
 					amount: paidAmount.join(''),
+					outOfPaper,
 				};
 			});
 	}
 	register(sign, plu, quantity, price) {
-		return this.queue(this.packMessage(0x34, `S${sign}${plu}*${quantity}#${price}`));
+		return this.queue(this.packMessage(0x34, `S${sign}${plu}*${quantity}#${price}`))
+			.then(([message, outOfPaper]) => ({
+				message,
+				outOfPaper,
+			}));
 	}
 
 	subtotal(display, callback) {
-		this.queue(this.packMessage(0x33, display || 0), (err, message) => {
-			if (err) {
-				return callback.call(this, err);
-			}
-			const split = message.data.toString().split(',');
-			return callback.call(this, null, {
-				subTotal: split.shift(),
-				tax: split,
+		return this.queue(this.packMessage(0x33, display || 0))
+			.then(([message, outOfPaper]) => {
+				const split = message.data.toString().split(',');
+				return callback.call(this, null, {
+					subTotal: split.shift(),
+					tax: split,
+					outOfPaper,
+				});
 			});
-		});
 	}
 
 	programRead(plu, callback) {
@@ -417,29 +428,25 @@ class Dp25 {
 	}
 
 	getTotals() {
-		return new Promise((resolve, reject) => {
-			this.queue(this.packMessage(
-				0x41,
-				'4'
-			), (err, message) => {
-				if (err) {
-					return reject(err);
-				}
-
+		return this.queue(this.packMessage(
+			0x41,
+			'4'
+		))
+			.then(([message, outOfPaper]) => {
 				const split = message.data.toString().split(',');
 
 				if (split[0] === 'F') {
-					return reject(new Error('F'));
+					throw new Error('F');
 				}
 
-				return resolve({
+				return {
 					errStatus: split.shift(),
 					cash: parseInt(split.shift(), 10) / 100,
 					check: parseInt(split.shift(), 10) / 100,
 					card: parseInt(split.shift(), 10) / 100,
-				});
+					outOfPaper,
+				};
 			});
-		});
 	}
 
 	getFirstSoldItem(from = '') {
