@@ -379,7 +379,7 @@ class Dp25 {
 
 	programRead(plu) {
 		return this.queue(this.packMessage(0x6B, `R,${plu}`))
-			.then((message) => {
+			.then(([message]) => {
 				const split = message.data.toString().split(',');
 				if (split.length === 1) {
 					return {
@@ -407,7 +407,7 @@ class Dp25 {
 			0x6B,
 			`P,${taxGroup},${plu},${priceType},${price},${ean},0,${pack},${name}`
 		))
-			.then((message) => {
+			.then(([message]) => {
 				const split = message.data.toString().split(',');
 				if (split.length === 1) {
 					return {
