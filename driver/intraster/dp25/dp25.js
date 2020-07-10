@@ -377,54 +377,46 @@ class Dp25 {
 			});
 	}
 
-	programRead(plu, callback) {
-		this.queue(this.packMessage(0x6B, `R,${plu}`), (err, message) => {
-			if (err) {
-				return callback.call(this, err);
-			}
-			const split = message.data.toString().split(',');
-			if (split.length === 1) {
-				return callback.call(this, null, {
-					errStatus: split.shift(),
-				});
-			}
-			return callback.call(this, null, {
-				errStatus: split.shift(),
-				plu: split.shift(),
-				taxGroup: split.shift(),
-				priceType: split.shift(),
-				price: split.shift(),
-				total: split.shift(),
-				sold: split.shift(),
-				ean: split.shift(),
-				ean2: split.shift(),
-				pack: split.shift(),
-				name: split.join(','),
-			});
-		});
-	}
-
-	programWrite(check, taxGroup, plu, priceType, price, ean, pack, name, callback) {
-		this.queue(
-			this.packMessage(
-				0x6B,
-				`P,${taxGroup},${plu},${priceType},${price},${ean},0,${pack},${name}`
-			),
-			(err, message) => {
-				if (err) {
-					return callback.call(this, err);
-				}
-
+	programRead(plu) {
+		return this.queue(this.packMessage(0x6B, `R,${plu}`))
+			.then((message) => {
 				const split = message.data.toString().split(',');
 				if (split.length === 1) {
-					return callback.call(this, null, {
+					return {
 						errStatus: split.shift(),
-					});
+					};
+				}
+				return {
+					errStatus: split.shift(),
+					plu: split.shift(),
+					taxGroup: split.shift(),
+					priceType: split.shift(),
+					price: split.shift(),
+					total: split.shift(),
+					sold: split.shift(),
+					ean: split.shift(),
+					ean2: split.shift(),
+					pack: split.shift(),
+					name: split.join(','),
+				};
+			});
+	}
+
+	programWrite(check, taxGroup, plu, priceType, price, ean, pack, name) {
+		return this.queue(this.packMessage(
+			0x6B,
+			`P,${taxGroup},${plu},${priceType},${price},${ean},0,${pack},${name}`
+		))
+			.then((message) => {
+				const split = message.data.toString().split(',');
+				if (split.length === 1) {
+					return {
+						errStatus: split.shift(),
+					};
 				}
 
 				return null;
-			}
-		);
+			});
 	}
 
 	getTotals() {
